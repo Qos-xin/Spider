@@ -43,7 +43,7 @@ namespace Spider
             else
             {
                 Start_Btn.Text = "停止爬公司列表";
-                UI(() => { listBox1.Items.Insert(0, G("爬公司列表已开始")); });
+                listBox1.Items.Insert(0, G("爬公司列表已开始"));
                 foreach (var item in CountyNames)
                 {
                     for (int i = 0; i < 500; i++)
@@ -67,8 +67,11 @@ namespace Spider
                         {
                             var UrlResult = await GetPageContextAsync(CountyPageUrlQueue.Dequeue());
                             CompanyDetailsQueue.Enqueue(UrlResult.ToArray());
-                            UI(() => { CountyLsBox.Items.AddRange(UrlResult.ToArray()); });
-                            UI(() => { toolStripProgressBar1.PerformStep(); });
+                            UI(() =>
+                            {
+                                CountyLsBox.Items.AddRange(UrlResult.ToArray());
+                                toolStripProgressBar1.PerformStep();
+                            });
                         };
                     }, CancelTokenCounty.Token).ContinueWith((t) =>
                      {
@@ -79,13 +82,17 @@ namespace Spider
                          }
                      }));
                 }
-                Task.Run(() =>
+                Task.WhenAll(Tasks.ToArray()).ContinueWith((t) =>
                 {
-                    Task.WaitAll(Tasks.ToArray());
-                    UI(() => { listBox1.Items.Insert(0, G(string.Format("总共拉取{0}个.", CountyLsBox.Items.Count))); });
-                    UI(() => { Start_Btn.Text = "开始爬公司列表"; });
-
+                    UI(() =>
+                    {
+                        listBox1.Items.Insert(0, G(string.Format("总共拉取{0}个.", CountyLsBox.Items.Count)));
+                        Start_Btn.Text = "开始爬公司列表";
+                    });
                 });
+
+
+
             }
 
         }
@@ -124,8 +131,11 @@ namespace Spider
                                 {
                                     var result = await GetDetailContext(item);
                                     CompanyDetailsList.Add(result);
-                                    UI(() => { CompanyDetail_LsBox.Items.Insert(0, result.Name??""); });
-                                    UI(() => { toolStripProgressBar2.PerformStep(); });
+                                    UI(() =>
+                                    {
+                                        toolStripProgressBar2.PerformStep();
+                                        CompanyDetail_LsBox.Items.Insert(0, result.Name ?? "");
+                                    });
                                 }
 
                             }
@@ -143,11 +153,17 @@ namespace Spider
                 }
                 Task.Run(() =>
                 {
-                    Task.WaitAll(Tasks.ToArray());
-                    SaveCompanyDetails(JsonConvert.SerializeObject(CompanyDetailsList));
-                    UI(() => { CompanyDetail_Btn.Text = "开始爬公司详情"; });
-                    UI(() => { listBox2.Items.Insert(0, G("爬公司详情已停止")); });
-                    UI(() => { listBox2.Items.Insert(0, G(string.Format("总共拉取{0}条记录", CompanyDetailsList.Count))); });
+                    Task.WhenAll(Tasks.ToArray()).ContinueWith((t =>
+                    {
+                        SaveCompanyDetails(JsonConvert.SerializeObject(CompanyDetailsList));
+                        UI(() =>
+                        {
+                            CompanyDetail_Btn.Text = "开始爬公司详情";
+                            listBox2.Items.Insert(0, G("爬公司详情已停止"));
+                            listBox2.Items.Insert(0, G(string.Format("总共拉取{0}条记录", CompanyDetailsList.Count)));
+                        });
+                    }));
+
                 });
             }
         }
